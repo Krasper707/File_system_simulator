@@ -2,8 +2,103 @@
 #include <sstream> // For breaking down input into tokens
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 
 using namespace std;
+
+class TrieNode
+{
+public:
+    unordered_map<string, TrieNode *> children;
+    bool isFile;
+    string content;
+    TrieNode() : isFile(false), content("") {}
+};
+
+class FileSystemTrie
+{
+private:
+    TrieNode *root;
+    TrieNode *currentDir;
+
+public:
+    FileSystemTrie()
+    {
+        root = new TrieNode();
+        currentDir = root;
+    }
+
+    // Create a new directory
+    void mkdir(const string &dirname)
+    {
+        if (currentDir->children.find(dirname) == currentDir->children.end())
+        {
+            currentDir->children[dirname] = new TrieNode();
+            cout << "Directory created: " << dirname << endl;
+        }
+        else
+        {
+            cout << "Error: Directory already exists.\n";
+        }
+    }
+    // List all files
+    void ls()
+    {
+        for (auto &entry : currentDir->children)
+        {
+            cout << entry.first << (entry.second->isFile ? " [File]" : " [Dir]") << " ";
+        }
+        cout << endl;
+    }
+
+    void cd(const string &dir)
+    {
+        if (dir == "..")
+        {
+            // have to go above the chain
+            cout << "GOING UP!!" << endl;
+            return;
+        }
+        if (currentDir->children.find(dir) != currentDir->children.end() && !currentDir->children[dir]->isFile)
+        {
+            currentDir = currentDir->children[dir];
+            cout << "Moved to " << dir << endl;
+        }
+        else
+        {
+            cout << "Error! Directory Not Found!!";
+        }
+    }
+    void touch(const string &filename, const string &content = "")
+    {
+        if (currentDir->children.find(filename) == currentDir->children.end())
+        {
+            currentDir->children[filename] = new TrieNode();
+            currentDir->children[filename]->isFile = true;
+            currentDir->children[filename]->content = content;
+            cout << "File created: " << filename << endl;
+        }
+        else
+        {
+            cout << "File already exists";
+        }
+    }
+    void rm(const string &filename)
+    {
+        auto iter = currentDir->children.find(filename);
+        if (iter != currentDir->children.end() && iter->second->isFile)
+        {
+            delete iter->second;
+            currentDir->children.erase(iter);
+            cout << "File deleted: " << filename << endl;
+        }
+        else
+        {
+            cout << "Error!! File not found or its a directory!" << endl;
+        }
+    }
+};
+
 void executecommand(const vector<string> &commands)
 {
     if (commands.empty())
@@ -50,22 +145,53 @@ void executecommand(const vector<string> &commands)
         cout << "Invalid Command: " << command << endl;
     }
 }
-int main()
+
+void startCli()
 {
-    string input;
+    FileSystemTrie fst;
+    string command, arg;
     while (true)
     {
         cout << ">>";
-        getline(cin, input);
-        istringstream ss(input);
-        vector<string> commands;
-        string token;
-        while (ss >> token)
+        cin >> command;
+        if (command == "mkdir")
         {
-            commands.push_back(token);
+            cin >> arg;
+            fst.mkdir(arg);
         }
-        executecommand(commands);
+        else if (command == "ls")
+        {
+            fst.ls();
+        }
+        else if (command == "cd")
+        {
+            cin >> arg;
+            fst.cd(arg);
+        }
+        else if (command == "touch")
+        {
+            cin >> arg;
+            fst.touch(arg);
+        }
+        else if (command == "exit")
+        {
+            break;
+        }
+        else if (command == "rm")
+        {
+            cin >> arg;
+            fst.rm(arg);
+        }
+        else
+        {
+            cout << "Unknown command!" << endl;
+        }
     }
+};
+
+int main()
+{
+    startCli();
 
     return 0;
 }
