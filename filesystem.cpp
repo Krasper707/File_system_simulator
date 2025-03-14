@@ -97,54 +97,49 @@ public:
             cout << "Error!! File not found or its a directory!" << endl;
         }
     }
-};
-
-void executecommand(const vector<string> &commands)
-{
-    if (commands.empty())
+    void echo(const string &filename, const string &content, bool append = false)
     {
-        return;
-    }
-
-    string command = commands[0];
-    if (command == "mkdir" || command == "cd" || command == "touch" || command == "rm")
-    {
-        if (commands.size() < 2)
+        if (currentDir->children.find(filename) == currentDir->children.end())
         {
-            cout << "Error: Missing argument for " << command << endl;
+            cout << "Error: File not found!\n";
             return;
         }
+
+        TrieNode *file = currentDir->children[filename];
+        if (!file->isFile)
+        {
+            cout << "Error: Cannot write to a directory!\n";
+            return;
+        }
+
+        if (append)
+        {
+            file->content += "\n" + content;
+        }
+        else
+        {
+            file->content = content;
+        }
+
+        cout << "Content written to " << filename << endl;
     }
-    if (command == "mkdir")
+    void cat(const string &filename)
     {
-        cout << "Creating a new director named: " << commands[1] << endl;
+        if (currentDir->children.find(filename) == currentDir->children.end())
+        {
+            cout << "Error: File not Found\n";
+            return;
+        }
+        TrieNode *file = currentDir->children[filename];
+        if (!file->isFile)
+        {
+            cout << "Error: " << filename << " is a directory!\n";
+            return;
+        }
+
+        cout << file->content << endl;
     }
-    else if (command == "ls")
-    {
-        cout << "Listing all directories present: " << endl;
-    }
-    else if (command == "cd")
-    {
-        cout << "Changing directory to: " << commands[1] << endl;
-    }
-    else if (command == "touch")
-    {
-        cout << "Creating new file named: " << commands[1] << endl;
-    }
-    else if (command == "exit")
-    {
-        cout << "Exiting...." << endl;
-        exit(0);
-    }
-    else if (command == "rm")
-    {
-        cout << "Removing: " << commands[1] << endl;
-    }
-    else
-    {
-        cout << "Invalid Command: " << command << endl;
-    }
-}
+};
 
 void startCli()
 {
@@ -181,6 +176,21 @@ void startCli()
         {
             cin >> arg;
             fst.rm(arg);
+        }
+        else if (command == "echo")
+        {
+            string filename, content, mode;
+            cin >> mode >> filename;
+            getline(cin, content);
+
+            bool append = (mode == ">>");
+            fst.echo(filename, content, append);
+        }
+        else if (command == "cat")
+        {
+            string filename;
+            cin >> filename;
+            fst.cat(filename);
         }
         else
         {
